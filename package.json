@@ -1,0 +1,21 @@
+{
+  "name": "dream-bubbles-backend",
+  "version": "1.0.0",
+  "description": "Dream Bubbles Restaurant Backend API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "seed": "node src/seed/seedData.js"
+  },
+  "keywords": ["bubble-tea", "restaurant", "mern", "dream-bubbles"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mongoose": "^8.9.2",
+    "morgan": "^1.10.0"
+  }
+}
