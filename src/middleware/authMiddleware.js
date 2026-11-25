@@ -64,7 +64,11 @@ exports.requireAuth = async (req, res, next) => {
         .select('-passwordHash')
         .populate('outletId', 'name city code isActive');
       if (!user || user.isActive === false) {
-        return res.status(401).json({ success: false, message: 'User account not active.' });
+        return res.status(401).json({
+          success: false,
+          code: 'ACCOUNT_INACTIVE',
+          message: 'User account not active.',
+        });
       }
       req.user = user;
       return next();
