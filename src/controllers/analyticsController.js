@@ -8,7 +8,7 @@ exports.getDashboardStats = async (req, res) => {
   try {
     const totalOutlets = await Outlet.countDocuments();
     const activeOutlets = await Outlet.countDocuments({ isActive: true });
-    const totalProducts = await Product.countDocuments();
+    const totalProducts = await Product.countDocuments({ deletedAt: null });
     const totalOrders = await Order.countDocuments();
 
     // Total revenue from non-cancelled orders

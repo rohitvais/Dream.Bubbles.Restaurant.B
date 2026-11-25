@@ -1,4 +1,5 @@
-require('dotenv').config();
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -22,6 +23,10 @@ app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/inventory', require('./routes/inventoryRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
+app.use('/api/admin/uploads', require('./routes/adminUploadRoutes'));
+app.use('/api/admin/categories', require('./routes/adminCategoryRoutes'));
+app.use('/api/admin/products', require('./routes/adminProductRoutes'));
+app.use('/api/admin/outlets', require('./routes/adminOutletRoutes'));
 
 // Root / Health check
 app.get('/', (req, res) => {
@@ -55,4 +60,5 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Dream Bubbles Backend server running on port ${PORT}`);
+  console.log(`VaisBucket key loaded: ${process.env.VAIS_BUCKET_API_KEY?.trim() ? 'yes' : 'no'}`);
 });

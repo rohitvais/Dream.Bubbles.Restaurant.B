@@ -80,14 +80,18 @@ const seedDatabase = async () => {
       },
     ];
 
-    const createdOutlets = await Outlet.insertMany(outletsData);
+    const outletsWithMaps = outletsData.map((o) => ({
+      ...o,
+      mapsUrl: `https://www.google.com/maps/search/?api=1&query=${o.location.lat},${o.location.lng}`,
+    }));
+    const createdOutlets = await Outlet.insertMany(outletsWithMaps);
     console.log(`✅ Seeded ${createdOutlets.length} Outlets`);
 
     // 2. Seed Categories
     const categoriesData = [
       {
-        name: 'Signature Boba',
-        slug: 'signature-boba',
+        name: 'Signature Chicken Items',
+        slug: 'signature-Chicken Items',
         description: 'Handcrafted brown sugar pearls simmered in rich creamy milk',
         icon: '🧋',
         image: 'https://images.unsplash.com/photo-1558857563-b37cf5a7304f?auto=format&fit=crop&w=400&q=80',
@@ -115,7 +119,7 @@ const seedDatabase = async () => {
       {
         name: 'Crispy Cafe Bites',
         slug: 'crispy-cafe-bites',
-        description: 'Tantalizing Asian street bites and golden crispy snacks',
+        description: 'Tantalizing Indian street bites and golden crispy snacks',
         icon: '🍟',
         image: 'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=400&q=80',
         displayOrder: 4,
@@ -124,7 +128,7 @@ const seedDatabase = async () => {
       {
         name: 'Bubble Waffles & Desserts',
         slug: 'bubble-waffles-desserts',
-        description: 'Warm Hong-Kong style egg waffles topped with gelato and boba',
+        description: 'Warm Hong-Kong style egg waffles topped with gelato and Chicken Items',
         icon: '🧇',
         image: 'https://images.unsplash.com/photo-1562376552-0d160a2f238d?auto=format&fit=crop&w=400&q=80',
         displayOrder: 5,
@@ -132,7 +136,13 @@ const seedDatabase = async () => {
       },
     ];
 
-    const createdCategories = await Category.insertMany(categoriesData);
+    const categoriesWithSort = categoriesData.map((c) => ({
+      ...c,
+      sortOrder: c.displayOrder,
+      imageUrl: c.image || '',
+      deletedAt: null,
+    }));
+    const createdCategories = await Category.insertMany(categoriesWithSort);
     console.log(`✅ Seeded ${createdCategories.length} Categories`);
 
     const catMap = {};
@@ -142,10 +152,10 @@ const seedDatabase = async () => {
 
     // 3. Seed Products
     const productsData = [
-      // Signature Boba
+      // Signature Chicken Items
       {
-        name: 'Tiger Brown Sugar Boba Milk',
-        category: catMap['signature-boba'],
+        name: 'Tiger Brown Sugar Chicken Items Milk',
+        category: catMap['signature-Chicken Items'],
         description: 'Fresh organic milk with molten brown sugar swirls, warm chewy tapioca pearls, and torched crème brûlée top.',
         price: 249,
         image: 'https://images.unsplash.com/photo-1558857563-b37cf5a7304f?auto=format&fit=crop&w=600&q=80',
@@ -157,7 +167,7 @@ const seedDatabase = async () => {
       },
       {
         name: 'Royal Roasted Oolong Milk Tea',
-        category: catMap['signature-boba'],
+        category: catMap['signature-Chicken Items'],
         description: 'Slow-roasted charcoal Taiwanese oolong tea blended with creamy milk and silky herbal grass jelly.',
         price: 229,
         image: 'https://images.unsplash.com/photo-1541658016709-82535e94bc69?auto=format&fit=crop&w=600&q=80',
@@ -168,9 +178,9 @@ const seedDatabase = async () => {
         isAvailable: true,
       },
       {
-        name: 'Taro Coconut Cloud Boba',
-        category: catMap['signature-boba'],
-        description: 'Real purple taro puree with coconut cream milk, sago pearls, and golden honey boba.',
+        name: 'Taro Coconut Cloud Chicken Items',
+        category: catMap['signature-Chicken Items'],
+        description: 'Real purple taro puree with coconut cream milk, sago pearls, and golden honey Chicken Items.',
         price: 259,
         image: 'https://images.unsplash.com/photo-1579954115545-a95591f28bfc?auto=format&fit=crop&w=600&q=80',
         isVeg: true,
@@ -180,8 +190,8 @@ const seedDatabase = async () => {
         isAvailable: true,
       },
       {
-        name: 'Uji Matcha Boba Supreme',
-        category: catMap['signature-boba'],
+        name: 'Uji Matcha Chicken Items Supreme',
+        category: catMap['signature-Chicken Items'],
         description: 'Ceremonial grade Japanese Uji matcha whisked fresh to order, layered over oat milk with tapioca pearls.',
         price: 269,
         image: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80',
@@ -201,7 +211,7 @@ const seedDatabase = async () => {
         image: 'https://images.unsplash.com/photo-1595981267035-7b04ca84a82d?auto=format&fit=crop&w=600&q=80',
         isVeg: true,
         isBestseller: true,
-        tags: ['Refreshing', 'Popping Boba'],
+        tags: ['Refreshing', 'Popping Chicken Items'],
         calories: '160 kcal',
         isAvailable: true,
       },
@@ -284,9 +294,9 @@ const seedDatabase = async () => {
 
       // Bubble Waffles & Desserts
       {
-        name: 'Hong Kong Egg Waffle with Boba & Ice Cream',
+        name: 'Hong Kong Egg Waffle with Chicken Items & Ice Cream',
         category: catMap['bubble-waffles-desserts'],
-        description: 'Freshly baked bubble waffle rolled with vanilla bean gelato, chocolate fudge, and warm brown sugar boba.',
+        description: 'Freshly baked bubble waffle rolled with vanilla bean gelato, chocolate fudge, and warm brown sugar Chicken Items.',
         price: 289,
         image: 'https://images.unsplash.com/photo-1562376552-0d160a2f238d?auto=format&fit=crop&w=600&q=80',
         isVeg: true,
@@ -297,7 +307,11 @@ const seedDatabase = async () => {
       },
     ];
 
-    const createdProducts = await Product.insertMany(productsData);
+    const productsWithUrl = productsData.map((p) => ({
+      ...p,
+      imageUrl: p.imageUrl || p.image || '',
+    }));
+    const createdProducts = await Product.insertMany(productsWithUrl);
     console.log(`✅ Seeded ${createdProducts.length} Products`);
 
     // 4. Seed Inventory for each Outlet

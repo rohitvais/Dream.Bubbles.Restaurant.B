@@ -20,8 +20,10 @@ exports.getInventory = async (req, res) => {
         populate: { path: 'category', select: 'name' },
       });
 
-    // Filter out null products if any were deleted
-    records = records.filter((r) => r.product && r.outlet);
+    // Filter out null or soft-deleted products/outlets
+    records = records.filter(
+      (r) => r.product && !r.product.deletedAt && r.outlet && !r.outlet.deletedAt
+    );
 
     if (lowStockOnly === 'true') {
       records = records.filter(
@@ -115,7 +117,7 @@ exports.batchUpdateInventory = async (req, res) => {
 exports.syncInventory = async (req, res) => {
   try {
     const outlets = await Outlet.find({ isActive: true });
-    const products = await Product.find({ isAvailable: true });
+    const products = await Product.find({ isAvailable: true, deletedAt: null });
     let createdCount = 0;
 
     for (const outlet of outlets) {

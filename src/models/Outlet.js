@@ -34,12 +34,21 @@ const outletSchema = new mongoose.Schema(
     location: {
       lat: {
         type: Number,
-        required: [true, 'Latitude is required'],
+        min: -90,
+        max: 90,
+        default: null,
       },
       lng: {
         type: Number,
-        required: [true, 'Longitude is required'],
+        min: -180,
+        max: 180,
+        default: null,
       },
+    },
+    mapsUrl: {
+      type: String,
+      trim: true,
+      default: '',
     },
     openingHours: {
       type: String,
@@ -51,7 +60,13 @@ const outletSchema = new mongoose.Schema(
     },
     imageUrl: {
       type: String,
-      default: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80',
+      trim: true,
+      default: '',
+    },
+    imageFileId: {
+      type: String,
+      trim: true,
+      default: null,
     },
     rating: {
       type: Number,

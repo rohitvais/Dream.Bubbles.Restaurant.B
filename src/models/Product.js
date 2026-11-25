@@ -23,7 +23,18 @@ const productSchema = new mongoose.Schema(
     },
     image: {
       type: String,
-      default: 'https://images.unsplash.com/photo-1558857563-b37cf5a7304f?auto=format&fit=crop&w=600&q=80',
+      trim: true,
+      default: '',
+    },
+    imageUrl: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    imageFileId: {
+      type: String,
+      trim: true,
+      default: null,
     },
     isVeg: {
       type: Boolean,
@@ -38,6 +49,20 @@ const productSchema = new mongoose.Schema(
       type: String,
       default: '220 kcal',
     },
+    prepTimeMinutes: {
+      type: Number,
+      min: 1,
+      default: 15,
+    },
+    availableOutlets: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Outlet',
+        },
+      ],
+      default: undefined,
+    },
     sweetnessLevels: {
       type: [String],
       default: ['0%', '30%', '50%', '70%', '100%'],
@@ -49,6 +74,10 @@ const productSchema = new mongoose.Schema(
     isAvailable: {
       type: Boolean,
       default: true,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
     },
   },
   { timestamps: true }

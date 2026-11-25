@@ -1,6 +1,7 @@
 const Order = require('../models/Order');
 const Inventory = require('../models/Inventory');
 const Outlet = require('../models/Outlet');
+const { buildWhatsAppDigits } = require('../lib/geoUtils');
 
 // Helper to generate unique order number like DB-8291
 const generateOrderNumber = () => {
@@ -165,7 +166,7 @@ ${specialInstructions ? `*Notes:* ${specialInstructions}\n` : ''}---------------
 _Please confirm my order. Thank you!_`;
 
     const encodedMsg = encodeURIComponent(whatsappMessage);
-    const cleanWhatsApp = outlet.whatsappNumber.replace(/[^0-9]/g, '');
+    const cleanWhatsApp = buildWhatsAppDigits(outlet.whatsappNumber);
     const whatsappUrl = `https://wa.me/${cleanWhatsApp}?text=${encodedMsg}`;
 
     const populatedOrder = await Order.findById(order._id).populate(

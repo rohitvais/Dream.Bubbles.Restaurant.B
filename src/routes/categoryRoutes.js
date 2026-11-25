@@ -1,13 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const {
-  getCategories,
-  createCategory,
-  updateCategory,
-  deleteCategory,
-} = require('../controllers/categoryController');
+const { getCategories } = require('../controllers/categoryController');
 
-router.route('/').get(getCategories).post(createCategory);
-router.route('/:id').put(updateCategory).delete(deleteCategory);
+// Public storefront route: active, non-deleted categories sorted by sortOrder
+router.get('/', getCategories);
 
 module.exports = router;
