@@ -10,14 +10,15 @@ const generateOrderNumber = () => {
 };
 
 // GET /api/orders
-// Query params: outletId, status, channel, search, limit
+// Query params: outletId (admin only), status, channel, search, limit
 exports.getOrders = async (req, res) => {
   try {
-    const { outletId, status, channel, search, limit = 50 } = req.query;
+    const { status, channel, search, limit = 50 } = req.query;
     let query = {};
 
-    if (outletId && outletId !== 'all') {
-      query.outlet = outletId;
+    // Always enforce server-side outlet scoping from authMiddleware
+    if (req.scopedOutletId) {
+      query.outlet = req.scopedOutletId;
     }
     if (status && status !== 'all') {
       query.status = status;
@@ -209,6 +210,13 @@ exports.updateOrderStatus = async (req, res) => {
     const order = await Order.findById(req.params.id);
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    if (req.user?.role !== 'admin' && String(order.outlet) !== req.scopedOutletId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: You can only update orders for your assigned outlet.',
+      });
     }
 
     // If order was cancelled and previous status wasn't cancelled, restore inventory

@@ -7,9 +7,10 @@ const {
   updateOrderStatus,
   deleteOrder,
 } = require('../controllers/orderController');
+const { requireAuth, requireAdmin, requireOutletAccess } = require('../middleware/authMiddleware');
 
-router.route('/').get(getOrders).post(createOrder);
-router.route('/:id').get(getOrderById).delete(deleteOrder);
-router.put('/:id/status', updateOrderStatus);
+router.route('/').get(requireAuth, requireOutletAccess, getOrders).post(createOrder);
+router.route('/:id').get(getOrderById).delete(requireAuth, requireAdmin, deleteOrder);
+router.put('/:id/status', requireAuth, requireOutletAccess, updateOrderStatus);
 
 module.exports = router;

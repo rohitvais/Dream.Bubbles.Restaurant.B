@@ -6,10 +6,11 @@ const {
   batchUpdateInventory,
   syncInventory,
 } = require('../controllers/inventoryController');
+const { requireAuth, requireAdmin, requireOutletAccess } = require('../middleware/authMiddleware');
 
-router.get('/', getInventory);
-router.post('/batch-update', batchUpdateInventory);
-router.post('/sync', syncInventory);
-router.put('/:id', updateInventoryItem);
+router.get('/', requireAuth, requireOutletAccess, getInventory);
+router.post('/batch-update', requireAuth, requireOutletAccess, batchUpdateInventory);
+router.post('/sync', requireAuth, requireAdmin, syncInventory);
+router.put('/:id', requireAuth, requireOutletAccess, updateInventoryItem);
 
 module.exports = router;

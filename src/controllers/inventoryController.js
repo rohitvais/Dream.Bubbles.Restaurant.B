@@ -3,14 +3,15 @@ const Outlet = require('../models/Outlet');
 const Product = require('../models/Product');
 
 // GET /api/inventory
-// Query params: outletId, lowStockOnly
+// Query params: outletId (admin only), lowStockOnly
 exports.getInventory = async (req, res) => {
   try {
-    const { outletId, lowStockOnly, search } = req.query;
+    const { lowStockOnly, search } = req.query;
     let query = {};
 
-    if (outletId) {
-      query.outlet = outletId;
+    // Always enforce server-side outlet scoping from authMiddleware
+    if (req.scopedOutletId) {
+      query.outlet = req.scopedOutletId;
     }
 
     let records = await Inventory.find(query)
@@ -53,6 +54,18 @@ exports.getInventory = async (req, res) => {
 // PUT /api/inventory/:id
 exports.updateInventoryItem = async (req, res) => {
   try {
+    const existing = await Inventory.findById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Inventory item not found' });
+    }
+
+    if (req.user?.role !== 'admin' && String(existing.outlet) !== req.scopedOutletId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: You can only update inventory for your assigned outlet.',
+      });
+    }
+
     const { stockQuantity, lowStockThreshold, isOutOfStock } = req.body;
     const updateData = {};
 
@@ -91,6 +104,18 @@ exports.batchUpdateInventory = async (req, res) => {
     const { updates } = req.body;
     if (!Array.isArray(updates) || updates.length === 0) {
       return res.status(400).json({ success: false, message: 'Invalid updates array' });
+    }
+
+    if (req.user?.role !== 'admin') {
+      const ids = updates.map((u) => u.id).filter(Boolean);
+      const docs = await Inventory.find({ _id: { $in: ids } }).select('outlet');
+      const unauthorized = docs.some((d) => String(d.outlet) !== req.scopedOutletId);
+      if (unauthorized) {
+        return res.status(403).json({
+          success: false,
+          message: 'Forbidden: Batch update contains items outside your assigned outlet.',
+        });
+      }
     }
 
     const promises = updates.map((item) => {

@@ -27,6 +27,7 @@ app.use('/api/admin/uploads', require('./routes/adminUploadRoutes'));
 app.use('/api/admin/categories', require('./routes/adminCategoryRoutes'));
 app.use('/api/admin/products', require('./routes/adminProductRoutes'));
 app.use('/api/admin/outlets', require('./routes/adminOutletRoutes'));
+app.use('/api/outlet', require('./routes/outletPanelRoutes'));
 
 // Root / Health check
 app.get('/', (req, res) => {

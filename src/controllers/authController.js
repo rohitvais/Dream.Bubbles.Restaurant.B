@@ -1,5 +1,6 @@
-const User = require('../models/User');
 const crypto = require('crypto');
+const User = require('../models/User');
+const Outlet = require('../models/Outlet');
 
 // Generate simple HMAC token
 const generateToken = (userId, role) => {
@@ -7,6 +8,30 @@ const generateToken = (userId, role) => {
   const secret = process.env.JWT_SECRET || 'dream-bubbles-secure-token-key-2026';
   const signature = crypto.createHmac('sha256', secret).update(payload).digest('hex');
   return Buffer.from(`${payload}:${signature}`).toString('base64');
+};
+
+const formatUserResponse = (user) => {
+  const populatedOutlet =
+    user.outletId && typeof user.outletId === 'object' && user.outletId._id
+      ? {
+          _id: user.outletId._id,
+          name: user.outletId.name,
+          city: user.outletId.city,
+          code: user.outletId.code,
+        }
+      : null;
+
+  return {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    outletId: populatedOutlet ? populatedOutlet._id : user.outletId || null,
+    outlet: populatedOutlet,
+    mustChangePassword: Boolean(user.mustChangePassword),
+    isActive: user.isActive !== false,
+  };
 };
 
 // Seed default users if empty
@@ -35,15 +60,35 @@ const seedDefaultUsers = async () => {
       });
       console.log('✅ Default customer account created: customer@dreambubbles.com / customer123');
     }
+
+    const outletUserCount = await User.countDocuments({
+      role: { $in: ['outlet_manager', 'outlet_staff'] },
+    });
+    if (outletUserCount === 0) {
+      const firstOutlet = await Outlet.findOne({ isActive: true }).sort({ createdAt: 1 });
+      if (firstOutlet) {
+        await User.create({
+          name: 'Outlet Kitchen Manager',
+          email: 'outlet@dreambubbles.com',
+          phone: firstOutlet.phone || '+91 98765 00001',
+          passwordHash: User.hashPassword('outlet123'),
+          role: 'outlet_manager',
+          outletId: firstOutlet._id,
+        });
+        console.log(
+          `✅ Default outlet manager created: outlet@dreambubbles.com / outlet123 (${firstOutlet.name})`
+        );
+      }
+    }
   } catch (err) {
     console.error('Error seeding default users:', err.message);
   }
 };
 
-// Call on startup
+// Call on startup (and allow re-checking if outlets are seeded later)
 seedDefaultUsers();
 
-// @desc    Login user (admin or customer)
+// @desc    Login user (admin, outlet_manager, outlet_staff, or customer)
 // @route   POST /api/auth/login
 exports.login = async (req, res) => {
   try {
@@ -60,10 +105,17 @@ exports.login = async (req, res) => {
     // Find by email or phone
     const user = await User.findOne({
       $or: [{ email: searchEmail }, { phone: searchEmail }],
-    });
+    }).populate('outletId', 'name city code');
+
+    if (user && user.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been deactivated. Please contact an administrator.',
+      });
+    }
 
     if (!user || !user.verifyPassword(password)) {
-      // Fallback for hardcoded credentials if DB seed hasn't completed
+      // Fallback for hardcoded demo credentials if DB seed hasn't completed
       if (searchEmail === 'admin@dreambubbles.com' && password === 'admin123') {
         const token = generateToken('fallback-admin', 'admin');
         return res.json({
@@ -75,6 +127,7 @@ exports.login = async (req, res) => {
             email: 'admin@dreambubbles.com',
             phone: '+91 98765 43210',
             role: 'admin',
+            outletId: null,
           },
         });
       }
@@ -90,6 +143,25 @@ exports.login = async (req, res) => {
             email: 'customer@dreambubbles.com',
             phone: '+91 91234 56789',
             role: 'customer',
+            outletId: null,
+          },
+        });
+      }
+
+      if (searchEmail === 'outlet@dreambubbles.com' && password === 'outlet123') {
+        const firstOutlet = await Outlet.findOne({ isActive: true }).select('_id name city code');
+        const token = generateToken('fallback-outlet', 'outlet_manager');
+        return res.json({
+          success: true,
+          token,
+          user: {
+            _id: 'outlet-fallback',
+            name: 'Outlet Kitchen Manager',
+            email: 'outlet@dreambubbles.com',
+            phone: firstOutlet?.phone || '+91 98765 00001',
+            role: 'outlet_manager',
+            outletId: firstOutlet ? firstOutlet._id : null,
+            outlet: firstOutlet || null,
           },
         });
       }
@@ -100,22 +172,19 @@ exports.login = async (req, res) => {
       });
     }
 
+    user.lastLoginAt = new Date();
+    await user.save({ validateBeforeSave: false });
+
     const token = generateToken(user._id.toString(), user.role);
 
-    res.json({
+    return res.json({
       success: true,
       token,
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-      },
+      user: formatUserResponse(user),
     });
   } catch (err) {
     console.error('Login error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -148,48 +217,31 @@ exports.register = async (req, res) => {
       phone: (phone || '').trim(),
       passwordHash: User.hashPassword(password),
       role: 'customer',
+      outletId: null,
     });
 
     const token = generateToken(newUser._id.toString(), newUser.role);
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       token,
-      user: {
-        _id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        phone: newUser.phone,
-        role: newUser.role,
-      },
+      user: formatUserResponse(newUser),
     });
   } catch (err) {
     console.error('Registration error:', err);
-    res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// @desc    Get current user profile
+// @desc    Get current authenticated user profile
 // @route   GET /api/auth/me
 exports.getMe = async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ success: false, message: 'Not authenticated' });
-    }
-
-    const rawToken = authHeader.split(' ')[1];
-    const decoded = Buffer.from(rawToken, 'base64').toString('ascii');
-    const parts = decoded.split(':');
-    const userId = parts[0];
-
-    const user = await User.findById(userId).select('-passwordHash');
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-
-    res.json({ success: true, user });
+    return res.json({
+      success: true,
+      user: formatUserResponse(req.user),
+    });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
